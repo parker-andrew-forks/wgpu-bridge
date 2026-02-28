@@ -251,6 +251,7 @@ impl WgpuBridge {
             ash::khr::get_physical_device_properties2::NAME.as_ptr(),
             ash::khr::external_memory_capabilities::NAME.as_ptr(),
             ash::khr::external_semaphore_capabilities::NAME.as_ptr(),
+            ash::khr::wayland_surface::NAME.as_ptr(),
         ];
 
         let app_info = vk::ApplicationInfo::default()
