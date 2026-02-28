@@ -252,6 +252,7 @@ impl WgpuBridge {
             ash::khr::external_memory_capabilities::NAME.as_ptr(),
             ash::khr::external_semaphore_capabilities::NAME.as_ptr(),
             ash::khr::wayland_surface::NAME.as_ptr(),
+            ash::khr::surface::NAME.as_ptr(),
         ];
 
         let app_info = vk::ApplicationInfo::default()
@@ -366,6 +367,7 @@ impl WgpuBridge {
             ash::khr::external_memory_capabilities::NAME,
             ash::khr::external_semaphore_capabilities::NAME,
             ash::khr::wayland_surface::NAME,
+            ash::khr::surface::NAME,
         ];
 
         let device_ext_names: Vec<&'static CStr> = vec![
