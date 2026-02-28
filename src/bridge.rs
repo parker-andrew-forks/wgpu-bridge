@@ -31,7 +31,7 @@ use wgpu_hal::Instance as HalInstance; // For enumerate_adapters trait method
 pub struct WgpuBridge {
     /// The wgpu instance (wraps Smithay's Vulkan instance)
     #[allow(dead_code)]
-    instance: wgpu::Instance,
+    pub instance: wgpu::Instance,
     /// The wgpu adapter
     adapter: wgpu::Adapter,
     /// The wgpu device
