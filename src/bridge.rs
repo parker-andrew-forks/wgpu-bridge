@@ -326,6 +326,7 @@ impl WgpuBridge {
             ash::khr::external_semaphore::NAME.as_ptr(),
             ash::khr::external_semaphore_fd::NAME.as_ptr(),
             ash::khr::timeline_semaphore::NAME.as_ptr(),
+            ash::khr::wayland_surface::NAME.as_ptr(),
         ];
 
         // Timeline semaphore features (required for Vulkan 1.2)
