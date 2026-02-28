@@ -326,7 +326,6 @@ impl WgpuBridge {
             ash::khr::external_semaphore::NAME.as_ptr(),
             ash::khr::external_semaphore_fd::NAME.as_ptr(),
             ash::khr::timeline_semaphore::NAME.as_ptr(),
-            ash::khr::wayland_surface::NAME.as_ptr(),
         ];
 
         // Timeline semaphore features (required for Vulkan 1.2)
@@ -366,6 +365,7 @@ impl WgpuBridge {
             ash::khr::get_physical_device_properties2::NAME,
             ash::khr::external_memory_capabilities::NAME,
             ash::khr::external_semaphore_capabilities::NAME,
+            ash::khr::wayland_surface::NAME,
         ];
 
         let device_ext_names: Vec<&'static CStr> = vec![
