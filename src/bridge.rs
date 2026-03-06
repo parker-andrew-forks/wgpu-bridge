@@ -1592,6 +1592,10 @@ impl WgpuBridge {
         // Map common DRM formats to wgpu formats
         // Note: DRM uses different channel order conventions than wgpu
         match fourcc {
+            drm_fourcc::DrmFourcc::Rgbx8888 => Ok(wgpu::TextureFormat::Rgba8Unorm),
+            drm_fourcc::DrmFourcc::Bgrx8888 => Ok(wgpu::TextureFormat::Bgra8Unorm),
+            drm_fourcc::DrmFourcc::Bgra8888 => Ok(wgpu::TextureFormat::Bgra8Unorm),
+            drm_fourcc::DrmFourcc::Rgba8888 => Ok(wgpu::TextureFormat::Rgba8Unorm),
             // ARGB8888 = B8G8R8A8 in memory (little-endian)
             drm_fourcc::DrmFourcc::Argb8888 => Ok(wgpu::TextureFormat::Bgra8Unorm),
             drm_fourcc::DrmFourcc::Xrgb8888 => Ok(wgpu::TextureFormat::Bgra8Unorm),
