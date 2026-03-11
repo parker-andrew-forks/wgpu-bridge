@@ -33,26 +33,26 @@ pub struct WgpuBridge {
     #[allow(dead_code)]
     pub instance: wgpu::Instance,
     /// The wgpu adapter
-    pub adapter: wgpu::Adapter,
+    adapter: wgpu::Adapter,
     /// The wgpu device
-    pub device: wgpu::Device,
+    device: wgpu::Device,
     /// The wgpu queue
-    pub queue: wgpu::Queue,
+    queue: wgpu::Queue,
     /// Supported dmabuf formats (queried from Vulkan)
-    pub supported_formats: Vec<SupportedFormat>,
+    supported_formats: Vec<SupportedFormat>,
     /// Sync capabilities of this device
-    pub sync_capabilities: SyncCapabilities,
+    sync_capabilities: SyncCapabilities,
     /// DRM format modifier capabilities
-    pub modifier_capabilities: ModifierCapabilities,
+    modifier_capabilities: ModifierCapabilities,
     /// Multi-planar format capabilities (NV12, P010, etc.)
-    pub multiplanar_capabilities: MultiPlanarCapabilities,
+    multiplanar_capabilities: MultiPlanarCapabilities,
     /// Frame counter for tracking submissions
-    pub frame_counter: AtomicU64,
+    frame_counter: AtomicU64,
     /// Last completed frame (approximation via polling)
-    pub last_completed_frame: AtomicU64,
+    last_completed_frame: AtomicU64,
     /// Owned Vulkan objects (for new_with_explicit_sync mode)
     /// MUST BE LAST so they are destroyed after all wgpu objects
-    pub owned_vulkan: Option<OwnedVulkanContext>,
+    owned_vulkan: Option<OwnedVulkanContext>,
 }
 
 /// Vulkan objects owned by WgpuBridge (when using new_with_explicit_sync).
@@ -230,60 +230,6 @@ impl WgpuBridge {
         })
     }
 
-    /// Create a new WgpuBridge using wgpu's standard instance creation.
-    ///
-    /// This is the simple path that doesn't share Vulkan context with Smithay.
-    /// For full integration, use `from_smithay_vulkan` instead.
-    pub fn new2<'a>(surface: wgpu::Surface<'a>) -> Result<Self, BridgeError> {
-        info!("Creating WgpuBridge with new Vulkan instance");
-
-        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
-            backends: wgpu::Backends::VULKAN,
-            ..Default::default()
-        });
-
-        let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
-            power_preference: wgpu::PowerPreference::HighPerformance,
-            compatible_surface: Some(&surface),
-            force_fallback_adapter: false,
-        }))
-        .map_err(|e| BridgeError::AdapterCreation(format!("{:?}", e)))?;
-
-        info!("Using adapter: {}", adapter.get_info().name);
-
-        let (device, queue) =
-            pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor {
-                label: Some("lamco-wgpu"),
-                required_features: wgpu::Features::empty(),
-                required_limits: wgpu::Limits::default(),
-                memory_hints: wgpu::MemoryHints::Performance,
-                trace: wgpu::Trace::Off,
-                experimental_features: wgpu::ExperimentalFeatures::disabled(),
-            }))?;
-
-        let supported_formats = Self::query_supported_formats(&adapter);
-
-        // No sync manager in simple mode (would need Vulkan context sharing)
-        let sync_capabilities = SyncCapabilities::default();
-        let modifier_capabilities = ModifierCapabilities::default();
-        let multiplanar_capabilities = MultiPlanarCapabilities::default();
-
-        Ok(Self {
-            instance,
-            adapter,
-            device,
-            queue,
-            supported_formats,
-            sync_capabilities,
-            modifier_capabilities,
-            multiplanar_capabilities,
-            frame_counter: AtomicU64::new(0),
-            last_completed_frame: AtomicU64::new(0),
-            owned_vulkan: None, // Simple mode doesn't own Vulkan objects
-        })
-    }
-
-
     /// Create a WgpuBridge with explicit sync extensions enabled.
     ///
     /// This creates a standalone Vulkan context (like `new()`) but enables
@@ -369,7 +315,7 @@ impl WgpuBridge {
 
         // Required device extensions for explicit sync
         let device_extensions: Vec<*const i8> = vec![
-            ash::khr::swapchain::NAME.as_ptr(), // default
+            ash::khr::swapchain::NAME.as_ptr(),
             ash::khr::maintenance1::NAME.as_ptr(),
             ash::khr::maintenance2::NAME.as_ptr(),
             ash::khr::multiview::NAME.as_ptr(),
@@ -381,21 +327,6 @@ impl WgpuBridge {
             ash::khr::external_semaphore::NAME.as_ptr(),
             ash::khr::external_semaphore_fd::NAME.as_ptr(),
             ash::khr::timeline_semaphore::NAME.as_ptr(),
-            /* defaults found for a normal WebGpu device
-
-                let defaults = [
-                    "VK_KHR_swapchain",
-                    "VK_KHR_swapchain_mutable_format",
-                    "VK_EXT_robustness2",
-                    "VK_KHR_external_memory_fd",
-                    "VK_EXT_external_memory_dma_buf",
-                    "VK_EXT_memory_budget",
-                ];
-
-            */
-            ash::khr::swapchain_mutable_format::NAME.as_ptr(),
-            ash::ext::image_robustness::NAME.as_ptr(),
-            ash::ext::memory_budget::NAME.as_ptr(),
         ];
 
         // Timeline semaphore features (required for Vulkan 1.2)
@@ -452,9 +383,6 @@ impl WgpuBridge {
             ash::khr::external_semaphore::NAME,
             ash::khr::external_semaphore_fd::NAME,
             ash::khr::timeline_semaphore::NAME,
-            ash::khr::swapchain_mutable_format::NAME,
-            ash::ext::image_robustness::NAME,
-            ash::ext::memory_budget::NAME,
         ];
 
         let owned_device = vk_device.clone();
