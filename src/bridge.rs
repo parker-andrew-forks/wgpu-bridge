@@ -230,6 +230,60 @@ impl WgpuBridge {
         })
     }
 
+    /// Create a new WgpuBridge using wgpu's standard instance creation.
+    ///
+    /// This is the simple path that doesn't share Vulkan context with Smithay.
+    /// For full integration, use `from_smithay_vulkan` instead.
+    pub fn new2<'a>(surface: wgpu::Surface<'a>) -> Result<Self, BridgeError> {
+        info!("Creating WgpuBridge with new Vulkan instance");
+
+        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
+            backends: wgpu::Backends::VULKAN,
+            ..Default::default()
+        });
+
+        let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
+            power_preference: wgpu::PowerPreference::HighPerformance,
+            compatible_surface: Some(&surface),
+            force_fallback_adapter: false,
+        }))
+        .map_err(|e| BridgeError::AdapterCreation(format!("{:?}", e)))?;
+
+        info!("Using adapter: {}", adapter.get_info().name);
+
+        let (device, queue) =
+            pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor {
+                label: Some("lamco-wgpu"),
+                required_features: wgpu::Features::empty(),
+                required_limits: wgpu::Limits::default(),
+                memory_hints: wgpu::MemoryHints::Performance,
+                trace: wgpu::Trace::Off,
+                experimental_features: wgpu::ExperimentalFeatures::disabled(),
+            }))?;
+
+        let supported_formats = Self::query_supported_formats(&adapter);
+
+        // No sync manager in simple mode (would need Vulkan context sharing)
+        let sync_capabilities = SyncCapabilities::default();
+        let modifier_capabilities = ModifierCapabilities::default();
+        let multiplanar_capabilities = MultiPlanarCapabilities::default();
+
+        Ok(Self {
+            instance,
+            adapter,
+            device,
+            queue,
+            supported_formats,
+            sync_capabilities,
+            modifier_capabilities,
+            multiplanar_capabilities,
+            frame_counter: AtomicU64::new(0),
+            last_completed_frame: AtomicU64::new(0),
+            owned_vulkan: None, // Simple mode doesn't own Vulkan objects
+        })
+    }
+
+
     /// Create a WgpuBridge with explicit sync extensions enabled.
     ///
     /// This creates a standalone Vulkan context (like `new()`) but enables
