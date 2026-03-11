@@ -33,26 +33,26 @@ pub struct WgpuBridge {
     #[allow(dead_code)]
     pub instance: wgpu::Instance,
     /// The wgpu adapter
-    adapter: wgpu::Adapter,
+    pub adapter: wgpu::Adapter,
     /// The wgpu device
-    device: wgpu::Device,
+    pub device: wgpu::Device,
     /// The wgpu queue
-    queue: wgpu::Queue,
+    pub queue: wgpu::Queue,
     /// Supported dmabuf formats (queried from Vulkan)
-    supported_formats: Vec<SupportedFormat>,
+    pub supported_formats: Vec<SupportedFormat>,
     /// Sync capabilities of this device
-    sync_capabilities: SyncCapabilities,
+    pub sync_capabilities: SyncCapabilities,
     /// DRM format modifier capabilities
-    modifier_capabilities: ModifierCapabilities,
+    pub modifier_capabilities: ModifierCapabilities,
     /// Multi-planar format capabilities (NV12, P010, etc.)
-    multiplanar_capabilities: MultiPlanarCapabilities,
+    pub multiplanar_capabilities: MultiPlanarCapabilities,
     /// Frame counter for tracking submissions
-    frame_counter: AtomicU64,
+    pub frame_counter: AtomicU64,
     /// Last completed frame (approximation via polling)
-    last_completed_frame: AtomicU64,
+    pub last_completed_frame: AtomicU64,
     /// Owned Vulkan objects (for new_with_explicit_sync mode)
     /// MUST BE LAST so they are destroyed after all wgpu objects
-    owned_vulkan: Option<OwnedVulkanContext>,
+    pub owned_vulkan: Option<OwnedVulkanContext>,
 }
 
 /// Vulkan objects owned by WgpuBridge (when using new_with_explicit_sync).
