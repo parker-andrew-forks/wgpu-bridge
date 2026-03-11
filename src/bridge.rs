@@ -309,16 +309,13 @@ impl WgpuBridge {
 
         let queue_family_index = queue_families
             .iter()
-            .position(|qf| {
-                qf.queue_flags.contains(vk::QueueFlags::GRAPHICS)
-                    && qf.queue_flags.contains(vk::QueueFlags::TRANSFER)
-            })
+            .position(|qf| qf.queue_flags.contains(vk::QueueFlags::GRAPHICS))
             .ok_or_else(|| BridgeError::AdapterCreation("No graphics queue family".into()))?
             as u32;
 
         // Required device extensions for explicit sync
         let device_extensions: Vec<*const i8> = vec![
-            ash::khr::swapchain::NAME.as_ptr(),
+            ash::khr::swapchain::NAME.as_ptr(), // default
             ash::khr::maintenance1::NAME.as_ptr(),
             ash::khr::maintenance2::NAME.as_ptr(),
             ash::khr::multiview::NAME.as_ptr(),
@@ -330,6 +327,21 @@ impl WgpuBridge {
             ash::khr::external_semaphore::NAME.as_ptr(),
             ash::khr::external_semaphore_fd::NAME.as_ptr(),
             ash::khr::timeline_semaphore::NAME.as_ptr(),
+            /* defaults found for a normal WebGpu device
+
+                let defaults = [
+                    "VK_KHR_swapchain",
+                    "VK_KHR_swapchain_mutable_format",
+                    "VK_EXT_robustness2",
+                    "VK_KHR_external_memory_fd",
+                    "VK_EXT_external_memory_dma_buf",
+                    "VK_EXT_memory_budget",
+                ];
+
+            */
+            ash::khr::swapchain_mutable_format::NAME.as_ptr(),
+            ash::ext::image_robustness::NAME.as_ptr(),
+            ash::ext::memory_budget::NAME.as_ptr(),
         ];
 
         // Timeline semaphore features (required for Vulkan 1.2)
@@ -386,6 +398,9 @@ impl WgpuBridge {
             ash::khr::external_semaphore::NAME,
             ash::khr::external_semaphore_fd::NAME,
             ash::khr::timeline_semaphore::NAME,
+            ash::khr::swapchain_mutable_format::NAME,
+            ash::ext::image_robustness::NAME,
+            ash::ext::memory_budget::NAME,
         ];
 
         let owned_device = vk_device.clone();
