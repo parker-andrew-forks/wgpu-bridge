@@ -309,7 +309,10 @@ impl WgpuBridge {
 
         let queue_family_index = queue_families
             .iter()
-            .position(|qf| qf.queue_flags.contains(vk::QueueFlags::GRAPHICS))
+            .position(|qf| {
+                qf.queue_flags.contains(vk::QueueFlags::GRAPHICS)
+                    && qf.queue_flags.contains(vk::QueueFlags::TRANSFER)
+            })
             .ok_or_else(|| BridgeError::AdapterCreation("No graphics queue family".into()))?
             as u32;
 
