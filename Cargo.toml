@@ -22,7 +22,7 @@ rustdoc-args = ["--cfg", "docsrs"]
 maintenance = { status = "actively-developed" }
 
 [dependencies]
-smithay = { git = "ssh://git@git.andrew.cx/external/smithay.git", rev = "94687f51cb7a4c57559f5f5f72aa1c68a60ea940", default-features = false, features = [
+smithay = { git = "https://github.com/parker-andrew-forks/smithay.git", rev = "94687f51cb7a4c57559f5f5f72aa1c68a60ea940", default-features = false, features = [
     "renderer_gl",
     "backend_drm",
     "backend_gbm",
