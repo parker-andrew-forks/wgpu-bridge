@@ -247,6 +247,16 @@ impl WgpuBridge {
             BridgeError::InstanceCreation(format!("failed to load Vulkan: {:?}", e))
         })?;
 
+        #[cfg(target_arch = "aarch64")]
+        let instance_extensions: Vec<*const std::ffi::c_char> = vec![
+            ash::khr::get_physical_device_properties2::NAME.as_ptr(),
+            ash::khr::external_memory_capabilities::NAME.as_ptr(),
+            ash::khr::external_semaphore_capabilities::NAME.as_ptr(),
+            ash::khr::wayland_surface::NAME.as_ptr(),
+            ash::khr::surface::NAME.as_ptr(),
+        ];
+
+        #[cfg(not(target_arch = "aarch64"))]
         let instance_extensions: Vec<*const i8> = vec![
             ash::khr::get_physical_device_properties2::NAME.as_ptr(),
             ash::khr::external_memory_capabilities::NAME.as_ptr(),
@@ -314,6 +324,24 @@ impl WgpuBridge {
             as u32;
 
         // Required device extensions for explicit sync
+        #[cfg(target_arch = "aarch64")]
+        let device_extensions: Vec<*const std::ffi::c_char> = vec![
+            ash::khr::swapchain::NAME.as_ptr(),
+            ash::khr::maintenance1::NAME.as_ptr(),
+            ash::khr::maintenance2::NAME.as_ptr(),
+            ash::khr::multiview::NAME.as_ptr(),
+            ash::khr::create_renderpass2::NAME.as_ptr(),
+            ash::khr::imageless_framebuffer::NAME.as_ptr(),
+            ash::khr::external_memory::NAME.as_ptr(),
+            ash::khr::external_memory_fd::NAME.as_ptr(),
+            ash::ext::external_memory_dma_buf::NAME.as_ptr(),
+            ash::khr::external_semaphore::NAME.as_ptr(),
+            ash::khr::external_semaphore_fd::NAME.as_ptr(),
+            ash::khr::timeline_semaphore::NAME.as_ptr(),
+        ];
+
+        // Required device extensions for explicit sync
+        #[cfg(not(target_arch = "aarch64"))]
         let device_extensions: Vec<*const i8> = vec![
             ash::khr::swapchain::NAME.as_ptr(),
             ash::khr::maintenance1::NAME.as_ptr(),
