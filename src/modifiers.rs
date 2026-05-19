@@ -17,7 +17,7 @@
 //! Using tiled modifiers improves GPU memory bandwidth by 20-40% compared
 //! to linear layouts, but requires proper negotiation between clients.
 
-use ash::vk::{self, ImageType};
+use ash::vk;
 use std::ffi::CStr;
 use tracing::{debug, trace, warn};
 
@@ -261,47 +261,6 @@ pub unsafe fn query_format_modifiers(
             props.format_features
         );
     }
-
-    result
-}
-
-/// This is hacked together from `query_format_modifiers` and `import_dmabuf`
-///
-/// It takes the image definition from import and determines if it's possible to import it.
-pub unsafe fn query_get_physical_device_image_format_properties2(
-    instance: &ash::Instance,
-    physical_device: vk::PhysicalDevice,
-    vk_format: vk::Format,
-    modifier: u64,
-) -> Result<(), vk::Result> {
-    let mut modifier_list: vk::ExternalImageFormatProperties<'_> =
-        vk::ExternalImageFormatProperties::default();
-    let mut format_props2 = vk::ImageFormatProperties2::default().push_next(&mut modifier_list);
-
-    let mut external_memory_info: vk::PhysicalDeviceExternalImageFormatInfo<'_> =
-        vk::PhysicalDeviceExternalImageFormatInfo::default()
-            .handle_type(vk::ExternalMemoryHandleTypeFlags::DMA_BUF_EXT);
-
-    let mut modifier_explicit_info =
-        vk::PhysicalDeviceImageDrmFormatModifierInfoEXT::default().drm_format_modifier(modifier);
-    // .plane_layouts(&plane_layouts);
-
-    let vk_format: vk::PhysicalDeviceImageFormatInfo2<'_> = vk::PhysicalDeviceImageFormatInfo2 {
-        format: vk_format,
-        usage: vk::ImageUsageFlags::SAMPLED | vk::ImageUsageFlags::TRANSFER_SRC,
-        ty: ImageType::TYPE_2D,
-        tiling: vk::ImageTiling::DRM_FORMAT_MODIFIER_EXT,
-
-        ..Default::default()
-    }
-    .push_next(&mut external_memory_info)
-    .push_next(&mut modifier_explicit_info);
-
-    let result = instance.get_physical_device_image_format_properties2(
-        physical_device,
-        &vk_format,
-        &mut format_props2,
-    );
 
     result
 }
