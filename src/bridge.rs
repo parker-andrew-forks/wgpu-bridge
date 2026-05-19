@@ -5,7 +5,8 @@
 
 use crate::error::{BridgeError, ImportError};
 use crate::modifiers::{
-    self, drm_mod, ExplicitModifierCreateInfo, ModifierCapabilities, ModifierProperties,
+    self, drm_mod, query_get_physical_device_image_format_properties2, ExplicitModifierCreateInfo,
+    ModifierCapabilities, ModifierProperties,
 };
 use crate::multiplanar::MultiPlanarCapabilities;
 #[cfg(feature = "dmabuf")]
@@ -18,6 +19,7 @@ use ash::vk;
 use smithay::backend::allocator::dmabuf::Dmabuf;
 #[cfg(feature = "dmabuf")]
 use smithay::backend::allocator::Buffer as AllocatorBuffer;
+use std::collections::HashSet;
 #[cfg(feature = "dmabuf")]
 use std::os::fd::AsRawFd;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -111,6 +113,12 @@ impl Drop for WgpuBridge {
     }
 }
 
+#[derive(Hash, Clone, Debug, PartialEq, Eq)]
+pub struct SupportedDmaBufImport {
+    pub modifier: u64,
+    pub vk_format: vk::Format,
+}
+
 /// A supported dmabuf format with its modifiers.
 #[derive(Debug, Clone)]
 pub struct SupportedFormat {
@@ -124,6 +132,8 @@ pub struct SupportedFormat {
     pub wgpu_format: wgpu::TextureFormat,
     /// Corresponding Vulkan format
     pub vk_format: vk::Format,
+    /// Modifiers checked against a format for image import using DmaBuf import.
+    pub image_create_mods: HashSet<SupportedDmaBufImport>,
 }
 
 /// DRM format modifier indicating "invalid" (use implicit modifier)
@@ -1787,12 +1797,35 @@ impl WgpuBridge {
                     };
 
                     let modifier_count = modifiers.len();
+
+                    let supported_import = modifiers
+                        .iter()
+                        .filter(|m| {
+                            let can_import = unsafe {
+                                query_get_physical_device_image_format_properties2(
+                                    instance,
+                                    physical_device,
+                                    vk_format,
+                                    **m,
+                                )
+                            };
+
+                            can_import.is_ok()
+                        })
+                        .map(|v| *v)
+                        .map(|v| SupportedDmaBufImport {
+                            modifier: v,
+                            vk_format: vk_format,
+                        })
+                        .collect::<HashSet<_>>();
+
                     formats.push(SupportedFormat {
                         fourcc: drm_fourcc,
                         modifier_props,
                         modifiers,
                         wgpu_format,
                         vk_format,
+                        image_create_mods: supported_import,
                     });
 
                     trace!(
@@ -1844,6 +1877,7 @@ impl WgpuBridge {
                 modifiers: default_mods.clone(),
                 wgpu_format: wgpu::TextureFormat::Bgra8Unorm,
                 vk_format: vk::Format::B8G8R8A8_UNORM,
+                image_create_mods: HashSet::new(),
             },
             SupportedFormat {
                 fourcc: drm_fourcc::DrmFourcc::Xrgb8888,
@@ -1851,6 +1885,7 @@ impl WgpuBridge {
                 modifiers: default_mods.clone(),
                 wgpu_format: wgpu::TextureFormat::Bgra8Unorm,
                 vk_format: vk::Format::B8G8R8A8_UNORM,
+                image_create_mods: HashSet::new(),
             },
             SupportedFormat {
                 fourcc: drm_fourcc::DrmFourcc::Abgr8888,
@@ -1858,6 +1893,7 @@ impl WgpuBridge {
                 modifiers: default_mods.clone(),
                 wgpu_format: wgpu::TextureFormat::Rgba8Unorm,
                 vk_format: vk::Format::R8G8B8A8_UNORM,
+                image_create_mods: HashSet::new(),
             },
             SupportedFormat {
                 fourcc: drm_fourcc::DrmFourcc::Xbgr8888,
@@ -1865,6 +1901,7 @@ impl WgpuBridge {
                 modifiers: default_mods.clone(),
                 wgpu_format: wgpu::TextureFormat::Rgba8Unorm,
                 vk_format: vk::Format::R8G8B8A8_UNORM,
+                image_create_mods: HashSet::new(),
             },
             SupportedFormat {
                 fourcc: drm_fourcc::DrmFourcc::Argb2101010,
@@ -1872,6 +1909,7 @@ impl WgpuBridge {
                 modifiers: default_mods,
                 wgpu_format: wgpu::TextureFormat::Rgb10a2Unorm,
                 vk_format: vk::Format::A2B10G10R10_UNORM_PACK32,
+                image_create_mods: HashSet::new(),
             },
         ]
     }
